@@ -524,7 +524,7 @@ export default class EmoteMenu extends Module {
 				const data = this.props.data,
 					filtered = this.props.filtered;
 
-				let show_heading = ! data.is_favorites && t.chat.context.get('chat.emote-menu.show-heading');
+				let show_heading = ! data.is_favorites && ! data.is_frequents && t.chat.context.get('chat.emote-menu.show-heading');
 				if ( show_heading === 2 )
 					show_heading = ! filtered;
 				else
@@ -639,6 +639,7 @@ export default class EmoteMenu extends Module {
 					aria-label={emote.name}
 					data-locked={emote.locked}
 					data-sellout={sellout}
+					data-uses={emote.uses}
 					onClick={!emote.locked && this.clickEmote}
 				>
 					<figure class="emote-picker__emote-figure">
@@ -1029,6 +1030,7 @@ export default class EmoteMenu extends Module {
 				state.filtered_channel_sets = this.filterSets(input, state.channel_sets);
 				state.filtered_all_sets = this.filterSets(input, state.all_sets);
 				state.filtered_fav_sets = this.filterSets(input, state.fav_sets);
+				state.filtered_frequent_sets = this.filterSets(input, state.frequent_sets);
 				state.filtered_emoji_sets = this.filterSets(input, state.emoji_sets);
 
 				return state;
@@ -1167,7 +1169,8 @@ export default class EmoteMenu extends Module {
 					data = state.set_data || {},
 					channel = state.channel_sets = [],
 					all = state.all_sets = [],
-					favorites = state.favorites = [];
+					favorites = state.favorites = [],
+					frequent = state.frequent = [];
 
 				// If we're still loading, don't set any data.
 				if ( props.loading || props.error || state.loading )
@@ -1483,6 +1486,44 @@ export default class EmoteMenu extends Module {
 					}
 				}
 
+				// Frequently used emotes
+				let ls_frequent = localStorage.getItem('twilight.emote_picker_history');
+				if (ls_frequent) {
+					ls_frequent = JSON.parse(ls_frequent);
+
+					for (const x of Object.values(ls_frequent)) {
+						const map_value = emote_map[x.emote.token];
+						if (!map_value) {
+							continue;
+						}
+
+						const map_id = map_value.id;
+
+						if (map_id !== x.emote.id) {
+							continue;
+						}
+
+						const id = Number.parseInt(map_id, 10),
+							token = map_value.token;
+
+						frequent.push({
+							uses: x.uses,
+							id,
+							name: token,
+							provider: 'twitch',
+							src: `//static-cdn.jtvnw.net/emoticons/v1/${id}/1.0`,
+							srcSet: `//static-cdn.jtvnw.net/emoticons/v1/${id}/1.0 1x, //static-cdn.jtvnw.net/emoticons/v1/${id}/2.0 2x, //static-cdn.jtvnw.net/emoticons/v1/${id}/3.0 4x`
+						});
+					}
+				}
+
+				frequent.sort((a, b) => a.uses > b.uses ? -1 : (a.uses == b.uses ? a.name.localeCompare(b.name) : 1));
+
+				state.frequent_sets = [{
+					key: 'frequents',
+					is_frequents: true,
+					emotes: frequent.slice(0, 28)
+				}];
 
 				// Sort Sets
 				channel.sort(sort_sets);
@@ -1641,6 +1682,9 @@ export default class EmoteMenu extends Module {
 					case 'fav':
 						sets = this.state.filtered_fav_sets;
 						break;
+					case 'frequent':
+						sets = this.state.filtered_frequent_sets;
+						break;
 					case 'channel':
 						sets = this.state.filtered_channel_sets;
 						break;
@@ -1713,6 +1757,16 @@ export default class EmoteMenu extends Module {
 									data-tab="fav"
 									data-tooltip-type="html"
 									data-title={t.i18n.t('emote-menu.favorites', 'Favorites')}
+									onClick={this.clickTab}
+								>
+									<figure class="ffz-i-star" />
+								</div>
+								<div
+									class={`ffz-tooltip emote-picker__tab tw-pd-x-1${tab === 'frequent' ? ' emote-picker__tab--active' : ''}`}
+									id="emote-picker__frequent"
+									data-tab="frequent"
+									data-tooltip-type="html"
+									data-title={t.i18n.t('emote-menu.frequent', 'Frequently Used Emotes')}
 									onClick={this.clickTab}
 								>
 									<figure class="ffz-i-star" />

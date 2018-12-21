@@ -691,7 +691,8 @@ export const AddonEmotes = {
 	tooltip(target, tip) {
 		const ds = target.dataset,
 			provider = ds.provider,
-			modifiers = ds.modifierInfo;
+			modifiers = ds.modifierInfo,
+			uses = ds.uses;
 
 		let name, preview, source, owner, mods, fav_source, emote_id,
 			plain_name = false,
@@ -797,6 +798,10 @@ export const AddonEmotes = {
 
 			owner && this.context.get('tooltip.emote-sources') && (<div class="tw-pd-t-05">
 				{owner}
+			</div>),
+
+			uses && (<div class="tw-pd-t-05">
+				{this.i18n.t('tooltip.uses', 'Uses: %{uses}', {uses})}
 			</div>),
 
 			ds.sellout && (<div class="tw-mg-t-05 tw-border-t tw-pd-t-05">{ds.sellout}</div>),
